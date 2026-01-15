@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Journal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caesar Dressing&family=Grenze Gotisch&family=Niconne&family=Old Standard TT&display=swap">
+
+<style>
+  body {
+    font-family: arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #648fb6;
+  }
+
+  h1 {
+font-family: Caesar Dressing, sans-serif;
+text-align: center;
+  }
+
+  textarea {
+    width: 50%;
+    height: 150px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+textarea {
+  font-family: "Open Sans", Arial, sans-serif;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  line-height: 1.4;
+  padding: 10px;
+}
+
+textarea {
+   box-shadow: 5px 5px 30px rgba(0, 0, 0, 0.5); /* Shadow effect */
+   border-radius: 5px;
+   border: 0.5px solid #e0e0e0;
+}
+
+/* 1. Limit how wide your textarea can grow on big screens */
+textarea {
+  width: 50%;
+  max-width: 600px; /* won’t get wider than this even on huge screens */
+  min-width: 280px; /* stays usable on small phones */
+  height: 150px;
+}
+
+#saveBtn, #exportBtn, #importBtn {
+    width: 150px;         /* Set the same width */
+    height: 50px;        /* Set the same height */
+    padding: 10px;       /* Optional: Add padding */
+    border: 2px solid #000; /* Optional: Add border */
+    border-radius: 5px;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5); /* Shadow effect */
+    background-color: #356c53; /* Button color */
+    color: black;        /* Text color */
+    font-family: 'Grenze Gotisch';
+    font-size: 16px;     /* Ensure font size is the same */
+    line-height: normal;  /* Ensure line height is the same */
+    text-align: center;   /* Center text */
+    display: inline-block; /* Ensure they behave like buttons */
+    margin: 5px;         /* Optional: Add margin */
+    cursor: pointer;      /* Change cursor on hover */
+}
+
+  .button-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+/* 2. Make buttons flex nicely and wrap if needed */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center; /* center them nicely */
+}
+
+/* 3. Buttons adjust size responsively */
+button {
+  flex: 1 1 120px; /* grow/shrink with a base width of 120px */
+  min-width: 100px;
+  padding: 8px 12px;
+}
+
+/* 4. Timeline container fills width but maxes out */
+.timeline {
+  max-width: 700px;
+  margin: 0 auto; /* center it horizontally */
+  padding: 10px;
+  background: #648fb6;
+  border-radius: 6px;
+  box-shadow: 5px 5px 30px rgba(0,0,0,0.5);
+}
+
+/* 5. Timeline entries wrap text and keep neat spacing */
+.entry {
+  word-wrap: break-word;
+  padding: 8px 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+
+  button {
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+
+  .timeline {
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+
+  .entry {
+    padding: 5px 0;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+  }
+
+  .entry:hover {
+    background: #97CCBB;
+  }
+</style>
+</head>
+<body>
+
+<center><h1 style="background-color:#648fb6; color:#6b548f;">Journal</h1></center>
+
+<center><textarea id="journalText" style= "background-color:lightblue; color:grey; font-family: 'arial', sans-serif;" placeholder="Type your text here..."></textarea></center>
+
+<div class="button-row">
+  <button id="saveBtn">Save Entry</button>
+  <button id="exportBtn">Export (.json)</button>
+  <input type="file" id="importFile" style="display:none" />
+  <button id="importBtn">Import (.json)</button>
+</div>
+
+<center><h1 style="background-color:#648fb6; color:#6b548f;">Timeline</h1></center>
+<div class="timeline" id="timeline"></div>
+
+<script>
+  const STORAGE_KEY = "journalEntries";
+
+  function loadEntries() {
+    const entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return entries;
+  }
+
+  function saveEntries(entries) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function addEntry(content) {
+    const entries = loadEntries();
+    const newEntry = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      content
+    };
+    entries.push(newEntry);
+    saveEntries(entries);
+    renderTimeline();
+  }
+
+  function renderTimeline() {
+    const timeline = document.getElementById("timeline");
+    timeline.innerHTML = "";
+    const entries = loadEntries().sort((a, b) => new Date(b.date) - new Date(a.date)); // newest first
+    entries.forEach(entry => {
+      const div = document.createElement("div");
+      div.className = "entry";
+      div.textContent = `${new Date(entry.date).toLocaleString()} — ${entry.content.slice(0, 40)}...`;
+      div.onclick = () => {
+        document.getElementById("journalText").value = entry.content;
+      };
+      timeline.appendChild(div);
+    });
+  }
+
+  document.getElementById("saveBtn").onclick = () => {
+    const content = document.getElementById("journalText").value.trim();
+    if (content) {
+      addEntry(content);
+      document.getElementById("journalText").value = "";
+    }
+  };
+
+  document.getElementById("exportBtn").onclick = () => {
+    const entries = loadEntries();
+    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "journal_entries.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  document.getElementById("importBtn").onclick = () => {
+    document.getElementById("importFile").click();
+  };
+
+  document.getElementById("importFile").onchange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (Array.isArray(imported)) {
+          saveEntries(imported);
+          renderTimeline();
+        } else {
+          alert("Invalid file format.");
+        }
+      } catch {
+        alert("Error reading file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Initial render
+  renderTimeline();
+</script>
+
+</body>
+</html>
